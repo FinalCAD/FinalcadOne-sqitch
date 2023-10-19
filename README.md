@@ -1,2 +1,3 @@
 # FinalcadOne-sqitch
-sqitch config setup
+
+Create sqitch config setup `sqitch.conf` containing postgres connection credentials.
