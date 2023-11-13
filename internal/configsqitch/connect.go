@@ -30,8 +30,9 @@ func Connect(configSqitch *ConfigSqitch) (string, error) {
 		return "", fmt.Errorf("configuration error: %s", err.Error())
 	}
 
+	fullUri := fmt.Sprintf("%s:%s", configSqitch.PostgresURI, configSqitch.PostgresPort)
 	authenticationToken, err := auth.BuildAuthToken(
-		context.TODO(), configSqitch.PostgresURI+":"+configSqitch.PostgresPort, configSqitch.Region, configSqitch.PostgresUser, cfg.Credentials)
+		context.TODO(), fullUri, configSqitch.Region, configSqitch.PostgresUser, cfg.Credentials)
 	if err != nil {
 		return "", fmt.Errorf("failed to create authentication token: %s", err.Error())
 	}
