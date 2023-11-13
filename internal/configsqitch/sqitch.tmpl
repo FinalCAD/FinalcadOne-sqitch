@@ -1,4 +1,4 @@
 [core]
     engine = pg
 [engine "pg"]
-    target = db:pg://{{ .PostgresUser }}:{{ .PostgresUser }}@{{ .PostgresURI }}:{{ .PostgresPort }}/{{ .PostgresDB }}
+    target = db:pg://{{ .PostgresUser }}:{{ .PostgresPassword }}@{{ .PostgresURI }}:{{ .PostgresPort }}/{{ .PostgresDB }}
