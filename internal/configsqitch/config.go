@@ -93,7 +93,7 @@ func (c *ConfigSqitch) WriteConfig() error {
 		return err
 	}
 	defer secretFile.Close()
-	_, err = secretFile.WriteString(fmt.Sprintf("SQITCH_PASSWORD=%s", c.PostgresPassword))
+	_, err = secretFile.WriteString(fmt.Sprintf("SQITCH_PASSWORD=\"%s\"", c.PostgresPassword))
 
 	return err
 }
