@@ -1,0 +1,4 @@
+[core]
+    engine = pg
+[engine "pg"]
+    target = db:pg://{{ .PostgresUser }}:{{ .PostgresUser }}@{{ .PostgresURI }}:{{ .PostgresPort }}/{{ .PostgresDB }}
