@@ -13,7 +13,6 @@ RUN go mod download
 
 COPY internal ./internal
 COPY cmd ./cmd
-COPY pkg ./pkg
 
 RUN go mod tidy && \
     go mod verify && \
