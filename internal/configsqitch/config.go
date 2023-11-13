@@ -1,12 +1,21 @@
 package configsqitch
 
 import (
+	"context"
+	"database/sql"
 	_ "embed"
 	"fmt"
 	"log/slog"
 	"text/template"
+	"time"
 
 	"github.com/FinalCAD/FinalcadOne-sqitch/internal/utils"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/rds/auth"
+
+	_ "github.com/lib/pq"
 )
 
 type ConfigSqitch struct {
@@ -63,7 +72,7 @@ func GetConfig() (*ConfigSqitch, error) {
 		configSqitch.PostgresUser = utils.Getenv("POSTGRES_USER", "notset")
 		configSqitch.PostgresPassword = utils.Getenv("POSTGRES_PASSWORD", "notset")
 	} else {
-		configSqitch.PostgresPassword, err = Connect(&configSqitch)
+		configSqitch.PostgresPassword, err = configSqitch.Connect()
 		if err != nil {
 			return nil, err
 		}
@@ -72,4 +81,45 @@ func GetConfig() (*ConfigSqitch, error) {
 	slog.Debug(fmt.Sprintf("ConfigSqitch struct: %v", configSqitch))
 
 	return &configSqitch, nil
+}
+
+func (c *ConfigSqitch) Connect() (string, error) {
+	ctx, cancel := context.WithTimeout(context.TODO(), time.Duration(c.Timeout)*time.Millisecond)
+	defer cancel()
+	var err error
+	var cfg aws.Config
+
+	if c.Profile != "" {
+		cfg, err = config.LoadDefaultConfig(ctx, config.WithSharedConfigProfile(c.Profile), config.WithRegion(c.Region))
+	} else {
+		cfg, err = config.LoadDefaultConfig(ctx, config.WithRegion(c.Region),
+			config.WithRetryer(func() aws.Retryer { return retry.AddWithMaxAttempts(aws.NopRetryer{}, 1) }))
+	}
+
+	if err != nil {
+		return "", fmt.Errorf("configuration error: %s", err.Error())
+	}
+
+	authenticationToken, err := auth.BuildAuthToken(
+		context.TODO(), fmt.Sprintf("%s:%s", c.PostgresURI, c.PostgresPort), c.Region, c.PostgresUser, cfg.Credentials)
+	if err != nil {
+		slog.Debug(fmt.Sprintf("ConfigSqitch struct: %v", c))
+		return "", fmt.Errorf("failed to create authentication token: %s", err.Error())
+	}
+
+	connectionString := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s",
+		c.PostgresURI, c.PostgresPort, c.PostgresUser, authenticationToken, c.PostgresDB,
+	)
+
+	db, err := sql.Open("postgres", connectionString)
+	if err != nil {
+		return "", err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return "", err
+	}
+
+	return authenticationToken, nil
 }
