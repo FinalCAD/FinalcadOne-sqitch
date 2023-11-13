@@ -51,7 +51,17 @@ func GetConfig() (*ConfigSqitch, error) {
 	var err error
 	configSqitch := ConfigSqitch{Timeout: DEFAULT_TIMEOUT}
 
-	configSqitch.PostgresUser = utils.Getenv("POSTGRES_IAM_USER", "notset")
+	configSqitch.PostgresUser = utils.Getenv("POSTGRES_IAM_USER", "")
+	if configSqitch.PostgresUser == "" {
+		configSqitch.PostgresUser = utils.Getenv("POSTGRES_USER", "notset")
+		configSqitch.PostgresPassword = utils.Getenv("POSTGRES_PASSWORD", "notset")
+	} else {
+		configSqitch.PostgresPassword, err = Connect(&configSqitch)
+		if err != nil {
+			return nil, err
+		}
+		slog.Info("Successfully connected to database")
+	}
 	configSqitch.PostgresURI = utils.Getenv("POSTGRES_URI", "notset")
 	configSqitch.PostgresPort = utils.Getenv("POSTGRES_PORT", DEFAULT_PORT)
 	configSqitch.PostgresDB = utils.Getenv("POSTGRES_DB", "notset")
@@ -59,12 +69,6 @@ func GetConfig() (*ConfigSqitch, error) {
 	configSqitch.Profile = utils.Getenv("AWS_PROFILE", "")
 	configSqitch.Filepath = utils.Getenv("CONFIG_SQITCH_PATH", DEFAULT_CONFIG_SQITCH_PATH)
 	slog.Debug(fmt.Sprintf("ConfigSqitch struct: %v", configSqitch))
-
-	configSqitch.PostgresPassword, err = Connect(&configSqitch)
-	if err != nil {
-		return nil, err
-	}
-	slog.Info("Successfully connected to database")
 
 	return &configSqitch, nil
 }
