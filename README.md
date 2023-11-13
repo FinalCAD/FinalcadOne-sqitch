@@ -1,7 +1,8 @@
 # FinalcadOne-sqitch
 
-Create configuration file for sqitch containing postgres connection credentials using rds IAM authentification.
+Create configuration file and a secret file for sqitch containing postgres connection credentials using rds IAM authentification.
 By default configuration file will be named `sqitch.conf` in current directory.
+ Password to load in environment variable will be located by default in `secret.conf`
 
 ### Environment variables
 
@@ -12,6 +13,7 @@ By default configuration file will be named `sqitch.conf` in current directory.
 | POSTGRES_URI                          | Postgres URI endpoint                                       | empty       |
 | POSTGRES_DB                           | Database name                                               | empty       |
 | CONFIG_SQITCH_PATH                    | config filepath + name                                      | sqitch.conf |
+| SECRET_SQITCH_PATH                    | config filepath + name                                      | secret.conf |
 
 ## User environment variable
 
@@ -33,5 +35,9 @@ IAM database authentication
 ## Usage in other container
 
 ```yaml
+# add binary from image
 COPY --from XXX /sqitch-config .
+# in entrypoint.sh
+# load secret in env vars
+source ./secret.conf
 ```

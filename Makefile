@@ -10,7 +10,7 @@ deps:
 	@go mod tidy
 
 # build
-build:
+build: fmt
 	@go build -o $(OUTPUT_FOLDER) $(CMD_FOLDER)
 
 # Run tests
@@ -24,3 +24,7 @@ fmt:
 # Clean
 clean:
 	@rm -rf $(OUTPUT_FOLDER)
+
+# Run
+run: build
+	@go run ./...

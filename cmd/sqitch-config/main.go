@@ -46,7 +46,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	err = configsqitch.WriteConfig(configSqitch)
+	err = configSqitch.WriteConfig()
 	if err != nil {
 		panic(err.Error())
 	}

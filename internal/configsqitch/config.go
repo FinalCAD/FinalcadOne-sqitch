@@ -27,7 +27,8 @@ type ConfigSqitch struct {
 	Region           string `json:"region"`
 	Profile          string `json:"profile"`
 	Timeout          int    `json:"timeout"`
-	Filepath         string `json:"filepath"`
+	ConfigFilepath   string `json:"configfilepath"`
+	SecretFilepath   string `json:"secretfilepath"`
 }
 
 const (
@@ -35,6 +36,7 @@ const (
 	DEFAULT_TIMEOUT            = 5000
 	DEFAULT_PORT               = "5432"
 	DEFAULT_CONFIG_SQITCH_PATH = "sqitch.conf"
+	DEFAULT_SECRET_SQITCH_PATH = "secret.conf"
 )
 
 //go:embed sqitch.tmpl
@@ -43,17 +45,6 @@ var templateConfig string
 func (c ConfigSqitch) String() string {
 	return fmt.Sprintf("{PostgresUser: %s, PostgresURI: %s, PostgresPort: %s, PostgresDB: %s, Region: %s, Profile: %s, Timeout : %v}",
 		c.PostgresUser, c.PostgresURI, c.PostgresPort, c.PostgresDB, c.Region, c.Profile, c.Timeout)
-}
-
-func WriteConfig(configSqitch *ConfigSqitch) error {
-	outputFile, err := utils.CreateFile(configSqitch.Filepath)
-	if err != nil {
-		return err
-	}
-	defer outputFile.Close()
-
-	tmpl := template.Must(template.New("configTemplate").Parse(templateConfig))
-	return tmpl.Execute(outputFile, configSqitch)
 }
 
 func GetConfig() (*ConfigSqitch, error) {
@@ -65,7 +56,8 @@ func GetConfig() (*ConfigSqitch, error) {
 	configSqitch.PostgresDB = utils.Getenv("POSTGRES_DB", "notset")
 	configSqitch.Region = utils.Getenv("AWS_REGION", DEFAULT_REGION)
 	configSqitch.Profile = utils.Getenv("AWS_PROFILE", "")
-	configSqitch.Filepath = utils.Getenv("CONFIG_SQITCH_PATH", DEFAULT_CONFIG_SQITCH_PATH)
+	configSqitch.ConfigFilepath = utils.Getenv("CONFIG_SQITCH_PATH", DEFAULT_CONFIG_SQITCH_PATH)
+	configSqitch.SecretFilepath = utils.Getenv("SECRET_SQITCH_PATH", DEFAULT_SECRET_SQITCH_PATH)
 
 	configSqitch.PostgresUser = utils.Getenv("POSTGRES_IAM_USER", "")
 	if configSqitch.PostgresUser == "" {
@@ -81,6 +73,29 @@ func GetConfig() (*ConfigSqitch, error) {
 	slog.Debug(fmt.Sprintf("ConfigSqitch struct: %v", configSqitch))
 
 	return &configSqitch, nil
+}
+
+func (c *ConfigSqitch) WriteConfig() error {
+	outputFile, err := utils.CreateFile(c.ConfigFilepath)
+	if err != nil {
+		return err
+	}
+	defer outputFile.Close()
+
+	tmpl := template.Must(template.New("configTemplate").Parse(templateConfig))
+	err = tmpl.Execute(outputFile, &c)
+	if err != nil {
+		return err
+	}
+
+	secretFile, err := utils.CreateFile(c.SecretFilepath)
+	if err != nil {
+		return err
+	}
+	defer secretFile.Close()
+	_, err = secretFile.WriteString(fmt.Sprintf("SQITCH_PASSWORD=%s", c.PostgresPassword))
+
+	return err
 }
 
 func (c *ConfigSqitch) Connect() (string, error) {

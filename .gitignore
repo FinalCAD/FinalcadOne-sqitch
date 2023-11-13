@@ -25,6 +25,7 @@ vendor/
 
 # ignore siqtch conf
 sqitch.conf
+secret.conf
 
 # build
 **/bin
